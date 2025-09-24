@@ -13,7 +13,6 @@ class DiceBearWidget extends StatelessWidget {
   const DiceBearWidget({
     super.key,
     required this.style,
-
     this.width,
     this.height,
     this.fit = BoxFit.contain,

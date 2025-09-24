@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dice_bear/models/options.dart';
-import 'package:flutter_dice_bear/styles/adventurer/models/adventurer_options.dart';
-import 'package:flutter_dice_bear/styles/adventurer/models/adventurer_style.dart';
-import 'package:flutter_dice_bear/styles/fun_emoji/models/fun_emoji_options.dart';
-import 'package:flutter_dice_bear/styles/fun_emoji/models/fun_emoji_style.dart';
+import 'package:flutter_dice_bear/styles/adventurer/adventurer_options.dart';
+import 'package:flutter_dice_bear/styles/adventurer/adventurer_style.dart';
+import 'package:flutter_dice_bear/styles/fun_emoji/fun_emoji_options.dart';
+import 'package:flutter_dice_bear/styles/fun_emoji/fun_emoji_style.dart';
 import 'package:flutter_dice_bear/widgets/dice_bear_widget.dart';
 
 void main() {
@@ -47,6 +47,7 @@ class _AvatarScreenState extends State<AvatarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final seed = "test";
     return Scaffold(
       appBar: AppBar(
         title: const Text('DiceBear Flutter'),
@@ -59,24 +60,16 @@ class _AvatarScreenState extends State<AvatarScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Avatar display
               Center(
                 child: DiceBearWidget(
-                  style: FunEmojiStyle(
-                    options: FunEmojiOptions(
-                      seed: "benco",
-                      // skinColor: ["F54927"],
-                      // hairColor: ["F54927"],
-                    ),
-                  ),
+                  style: FunEmojiStyle(options: FunEmojiOptions(seed: seed)),
 
-                  width: 256,
-                  height: 256,
-                  fit: BoxFit.fitWidth,
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 32.0),
-
+              const SizedBox(height: 24.0),
               // Customization controls
               Card(
                 child: Padding(

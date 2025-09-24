@@ -3,8 +3,8 @@ import 'package:flutter_dice_bear/core/prng.dart';
 import 'package:flutter_dice_bear/models/style_create_result.dart';
 import 'package:flutter_dice_bear/models/style_license.dart';
 import 'package:flutter_dice_bear/models/style_meta.dart';
-import 'package:flutter_dice_bear/styles/adventurer/models/adventurer_options.dart';
-import 'package:flutter_dice_bear/styles/adventurer/utils/component_utils.dart';
+import 'package:flutter_dice_bear/styles/adventurer/adventurer_options.dart';
+import 'package:flutter_dice_bear/styles/adventurer/adventurer_component_factory.dart';
 import 'package:flutter_dice_bear/utils/extensions.dart';
 
 /// Classe principale du style Adventurer
@@ -36,11 +36,9 @@ class AdventurerStyle extends AvatarStyle {
 
   @override
   StyleCreateResult create({required PRNG prng}) {
-    final components = ComponentUtils.getComponents(
-      prng: prng,
-      options: options,
-    );
-    final colors = ComponentUtils.getColors(prng: prng, options: options);
+    final factory = AdventurerComponentFactory();
+    final components = factory.getComponents(prng: prng, options: options);
+    final colors = factory.getColors(prng: prng, options: options);
     if (components["hair"]?.name != null &&
         invisibleEarringsHair.contains(components["hair"]?.name)) {
       components["earrings"] = null;

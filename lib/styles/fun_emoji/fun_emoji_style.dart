@@ -3,8 +3,8 @@ import 'package:flutter_dice_bear/models/avatar_style.dart';
 import 'package:flutter_dice_bear/models/style_create_result.dart';
 import 'package:flutter_dice_bear/models/style_license.dart';
 import 'package:flutter_dice_bear/models/style_meta.dart';
-import 'package:flutter_dice_bear/styles/fun_emoji/models/fun_emoji_options.dart';
-import 'package:flutter_dice_bear/styles/fun_emoji/utils/component_utils.dart';
+import 'package:flutter_dice_bear/styles/fun_emoji/fun_emoji_options.dart';
+import 'package:flutter_dice_bear/styles/fun_emoji/fun_emoji_component_factory.dart';
 import 'package:flutter_dice_bear/utils/extensions.dart';
 
 class FunEmojiStyle extends AvatarStyle {
@@ -25,10 +25,8 @@ class FunEmojiStyle extends AvatarStyle {
 
   @override
   StyleCreateResult create({required PRNG prng}) {
-    final components = ComponentUtils.getComponents(
-      prng: prng,
-      options: options,
-    );
+    final factory = FunEmojiComponentFactory();
+    final components = factory.getComponents(prng: prng, options: options);
     final attr = StyleCreateResultAttributes(viewBox: '0 0 200 200');
     attr["fill"] = "none";
     attr["shape-rendering"] = "auto";

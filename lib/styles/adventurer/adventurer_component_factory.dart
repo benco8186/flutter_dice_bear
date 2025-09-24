@@ -2,11 +2,16 @@ import 'package:flutter_dice_bear/core/prng.dart';
 import 'package:flutter_dice_bear/models/component.dart';
 import 'package:flutter_dice_bear/models/pick_component_props.dart';
 import 'package:flutter_dice_bear/styles/adventurer/adventurer_assets.dart';
-import 'package:flutter_dice_bear/styles/adventurer/models/adventurer_options.dart';
+import 'package:flutter_dice_bear/styles/adventurer/adventurer_options.dart';
+import 'package:flutter_dice_bear/models/component_factory.dart';
 import 'package:flutter_dice_bear/utils/functions.dart';
 
-abstract class ComponentUtils {
-  static Map<String, String> getColors({
+class AdventurerComponentFactory extends ComponentFactory {
+  @override
+  ComponentGroupCollection get componentCollection => AdventurerAssets.assets;
+
+  @override
+  Map<String, String> getColors({
     required PRNG prng,
     required AdventurerOptions options,
   }) {
@@ -16,7 +21,8 @@ abstract class ComponentUtils {
     };
   }
 
-  static ComponentPickCollection getComponents({
+  @override
+  ComponentPickCollection getComponents({
     required PRNG prng,
     required AdventurerOptions options,
   }) {
@@ -75,23 +81,5 @@ abstract class ComponentUtils {
             )
           : null,
     };
-  }
-
-  static ComponentPick? pickComponent(PickComponentProps props) {
-    final ComponentGroupCollection componentCollection =
-        AdventurerAssets.assets;
-
-    final String? key = props.prng.pick(props.values);
-
-    if (key != null &&
-        componentCollection.containsKey(props.group) &&
-        componentCollection[props.group]!.containsKey(key)) {
-      return ComponentPick(
-        name: key,
-        value: componentCollection[props.group]![key]!,
-      );
-    } else {
-      return null;
-    }
   }
 }
