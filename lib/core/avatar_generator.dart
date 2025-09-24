@@ -1,326 +1,278 @@
-import 'package:xml/xml.dart' as xml;
+import 'dart:math';
 
-import '../models/avatar_result.dart';
-import 'prng.dart';
-import 'options.dart';
-import 'svg/svg_builder.dart';
+import 'package:flutter_dice_bear/models/avatar_style.dart';
+import 'package:flutter_dice_bear/models/options.dart';
+import 'package:flutter_dice_bear/core/prng.dart';
+import 'package:flutter_dice_bear/models/style_create_result.dart';
+import 'package:flutter_dice_bear/models/avatar_result.dart';
+import 'package:flutter_dice_bear/utils/functions.dart';
+import 'package:flutter_dice_bear/utils/licence_utils.dart';
 
 /// A function that creates an avatar component based on the given PRNG and options
-typedef AvatarComponentBuilder<T> =
+typedef AvatarComponentBuilder =
     String Function({
       required PRNG prng,
-      required T options,
+      required AvatarOptions options,
       Map<String, dynamic> components,
       Map<String, String> colors,
     });
 
-/// Base class for all avatar styles
-abstract class AvatarStyle<T> {
-  /// The name of the style
-  String get name;
-
-  /// The license information for the style
-  String get license;
-
-  /// The creator of the style
-  String get creator;
-
-  /// The source of the style (e.g., Figma URL)
-  String get source;
-
-  /// The version of the style
-  String get version;
-
-  /// The viewBox for the SVG
-  String get viewBox;
-
-  /// The default options for the style
-  T get defaultOptions;
-
-  /// The schema for the style options
-  Map<String, dynamic> get schema;
-
-  /// Creates the avatar components
-  Map<String, dynamic> create({required PRNG prng, required T options});
-}
-
 /// The main class for generating avatars
-class AvatarGenerator<T> {
-  final AvatarStyle<T> _style;
-  final AvatarOptions _defaultOptions;
+class AvatarGenerator {
+  final AvatarStyle style;
 
   /// Creates a new AvatarGenerator with the given style and default options
-  AvatarGenerator({
-    required AvatarStyle<T> style,
-    AvatarOptions? defaultOptions,
-  }) : _style = style,
-       _defaultOptions = defaultOptions ?? const AvatarOptions(seed: '');
+  AvatarGenerator({required this.style});
 
   /// Generates an avatar with the given options
-  AvatarResult generate([T? options]) {
-    final mergedOptions = _mergeOptions(options);
-    final prng = PRNG(mergedOptions.seed);
+  AvatarResult generate() {
+    final prng = PRNG.create(style.options.seed);
 
     // Create the avatar components
-    final components = _style.create(
-      prng: prng,
-      options: options ?? _style.defaultOptions,
+    final result = style.create(prng: prng);
+    final backgroundType = prng.pick(
+      style.options.backgroundType ?? [],
+      'solid',
     );
+    final viewBoxParts = result.attributes.viewBox.split(' ');
+    final x = double.parse(viewBoxParts[0]);
+    final y = double.parse(viewBoxParts[1]);
+    final vbW = double.parse(viewBoxParts[2]);
+    final vbH = double.parse(viewBoxParts[3]);
 
+    final (
+      String bgPrimaryColor,
+      String bgSecondaryColor,
+    ) = _getBackgroundColors(
+      prng,
+      style.options.backgroundColor ?? [],
+      backgroundType,
+    );
+    final bgRotationHasValues =
+        style.options.backgroundRotation != null &&
+        style.options.backgroundRotation!.isNotEmpty;
+    final bgRotation = prng.integer(
+      bgRotationHasValues ? style.options.backgroundRotation!.reduce(min) : 0,
+      bgRotationHasValues ? style.options.backgroundRotation!.reduce(max) : 0,
+    );
+    if (style.options.size != null) {
+      final size = style.options.size.toString();
+      result.attributes["width"] = size;
+      result.attributes["height"] = size;
+    }
+    if (style.options.scale != null && style.options.scale != 100) {
+      result.body = _addScale(result, vbW, vbH, x, y, style.options.scale!);
+    }
+    if (style.options.flip) {
+      result.body = addFlip(result, vbW, x);
+    }
+    if (style.options.rotate != null) {
+      result.body = _addRotate(result, vbW, vbH, x, y, style.options.rotate!);
+    }
+    if (style.options.translateX != null || style.options.translateY != null) {
+      result.body = _addTranslate(
+        result,
+        vbW,
+        vbH,
+        x,
+        y,
+        x: style.options.translateX!,
+        y: style.options.translateY,
+      );
+    }
+    if (bgPrimaryColor != 'transparent' && bgSecondaryColor != 'transparent') {
+      result.body = _addBackground(
+        result,
+        vbW,
+        vbH,
+        x,
+        y,
+        bgPrimaryColor,
+        bgSecondaryColor,
+        backgroundType,
+        bgRotation,
+      );
+    }
+    if (style.options.radius != null || style.options.clip != null) {
+      result.body = _addViewboxMask(
+        result,
+        vbW,
+        vbH,
+        x,
+        y,
+        style.options.radius ?? 0,
+      );
+    }
+    if (style.options.randomizeIds) {
+      result.body = _randomizeIds(result);
+    }
+    final attributes = createAttrString(result);
+    final metadata = LicenceUtils.licenceToXml(style);
+    final svg = "<svg $attributes>$metadata${result.body}</svg>";
     // Build the SVG
-    final svg = _buildSvg(prng, mergedOptions, components);
 
     return AvatarResult(
       svg: svg,
       extra: {
-        'style': _style.name,
-        'version': _style.version,
-        'seed': mergedOptions.seed,
-        ...components,
+        "primaryBackgroundColor": bgPrimaryColor,
+        "secondaryBackgroundColor": bgSecondaryColor,
+        "backgroundType": backgroundType,
+        "backgroundRotation": bgRotation,
+        if (result.extra != null) ...result.extra!(),
       },
     );
   }
 
-  /// Merges the given options with the default options
-  AvatarOptions _mergeOptions(T? options) {
-    // Start with default options
-    var merged = _defaultOptions.copyWith(
-      seed: _defaultOptions.seed.isEmpty
-          ? DateTime.now().millisecondsSinceEpoch.toString()
-          : _defaultOptions.seed,
-    );
-
-    // Apply style-specific options if provided
-    if (options != null) {
-      // Style-specific options are already applied through the options parameter
-      // No additional merging needed as they're handled by the style implementation
-    }
-
-    return merged;
-  }
-
-  /// Builds the SVG for the avatar
-  String _buildSvg(
+  (String primary, String secondary) _getBackgroundColors(
     PRNG prng,
-    AvatarOptions options,
-    Map<String, dynamic> components,
+    List<String> backgroundColor,
+    String backgroundType, // "solid" ou "gradientLinear"
   ) {
-    final builder = SvgBuilder('svg')
-      ..addAttribute('viewBox', _style.viewBox)
-      ..addAttribute('width', options.size?.toString() ?? '100%')
-      ..addAttribute('height', options.size?.toString() ?? '100%')
-      ..addAttribute('fill', 'none')
-      ..addAttribute('shape-rendering', 'auto')
-      ..addAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    List<String> shuffledBackgroundColors = prng.shuffle(backgroundColor);
 
-    // Add background if needed
-    final background = _createBackground(prng, options);
-    if (background != null) {
-      builder.addChild(background);
+    if (shuffledBackgroundColors.length <= 1) {
+      // Si pas de couleur ou une seule couleur
+      shuffledBackgroundColors = backgroundColor;
+      prng.next(); // consomme un pas du PRNG
+    } else if (backgroundColor.length == 2 &&
+        backgroundType == 'gradientLinear') {
+      // Si exactement 2 couleurs + dégradé → respecter l'ordre fourni
+      shuffledBackgroundColors = backgroundColor;
+      prng.next(); // consomme un pas du PRNG
+    } else {
+      shuffledBackgroundColors = prng.shuffle(backgroundColor);
     }
 
-    // Add avatar components
-    for (final component in components.values) {
-      if (component is String) {
-        builder.addChild(component);
-      }
+    if (shuffledBackgroundColors.isEmpty) {
+      shuffledBackgroundColors = ['transparent'];
     }
 
-    // Apply transformations
-    var svg = builder.build();
-
-    if (options.scale != null && options.scale != 100) {
-      svg = _applyScale(svg, options.scale!);
-    }
-
-    if (options.flip) {
-      svg = _applyFlip(svg);
-    }
-
-    if (options.rotate != null) {
-      svg = _applyRotate(svg, options.rotate!);
-    }
-
-    if (options.translateX != null || options.translateY != null) {
-      svg = _applyTranslate(
-        svg,
-        options.translateX ?? 0,
-        options.translateY ?? 0,
-      );
-    }
-
-    if (options.radius != null || options.clip == true) {
-      svg = _applyClip(svg, options.radius ?? 0);
-    }
-
-    return svg;
+    final primary = shuffledBackgroundColors[0];
+    final secondary = shuffledBackgroundColors.length > 1
+        ? shuffledBackgroundColors[1]
+        : shuffledBackgroundColors[0];
+    final primaryColor = convertColor(primary);
+    final secondaryColor = convertColor(secondary);
+    return (primaryColor, secondaryColor);
   }
 
-  /// Creates the background for the avatar
-  String? _createBackground(PRNG prng, AvatarOptions options) {
-    final backgroundColor = options.backgroundColor?.isNotEmpty == true
-        ? prng.pick(options.backgroundColor!)
-        : 'transparent';
+  String _addScale(
+    StyleCreateResult result,
+    double width,
+    double height,
+    double x,
+    double y,
+    double scale,
+  ) {
+    final double percent = scale != 0 ? (scale - 100) / 100 : 0;
 
-    if (backgroundColor == 'transparent') {
-      return null;
-    }
+    final double translateX = (width / 2 + x) * percent * -1;
+    final double translateY = (height / 2 + y) * percent * -1;
 
-    final backgroundType = prng.pick(options.backgroundType ?? ['solid']);
-
-    if (backgroundType == 'solid') {
-      return SvgBuilder.rect(
-        width: double.parse(_style.viewBox.split(' ')[2]),
-        height: double.parse(_style.viewBox.split(' ')[3]),
-        attributes: {'fill': backgroundColor},
-      );
-    } else if (backgroundType == 'gradient') {
-      // Simple gradient implementation
-      final gradientId = 'gradient-${DateTime.now().millisecondsSinceEpoch}';
-      final gradient = SvgBuilder.linearGradient(
-        id: gradientId,
-        stops: [
-          MapEntry(0, backgroundColor),
-          MapEntry(100, _adjustColorBrightness(backgroundColor, 30)),
-        ],
-      );
-
-      return gradient +
-          SvgBuilder.rect(
-            width: double.parse(_style.viewBox.split(' ')[2]),
-            height: double.parse(_style.viewBox.split(' ')[3]),
-            attributes: {'fill': 'url(#$gradientId)'},
-          );
-    }
-
-    return null;
+    return '<g transform="translate($translateX $translateY) scale(${scale / 100})">${result.body}</g>';
   }
 
-  /// Helper method to adjust color brightness
-  String _adjustColorBrightness(String color, int amount) {
-    // Simple implementation - in a real app, use a proper color manipulation library
-    try {
-      if (color.startsWith('#')) {
-        final buffer = StringBuffer();
-        buffer.write('#');
-        for (int i = 0; i < 3; i++) {
-          final part = int.parse(
-            color.substring(i * 2 + 1, i * 2 + 3),
-            radix: 16,
-          );
-          final adjusted = (part + amount)
-              .clamp(0, 255)
-              .toRadixString(16)
-              .padLeft(2, '0');
-          buffer.write(adjusted);
-        }
-        return buffer.toString();
-      }
-    } catch (e) {
-      // If there's an error, return the original color
-    }
-    return color;
+  String addFlip(StyleCreateResult result, double width, double x) {
+    return '<g transform="scale(-1 1) translate(${width * -1 - x * 2} 0)">${result.body}</g>';
   }
 
-  /// Applies scaling to the SVG
-  String _applyScale(String svg, int scale) {
-    final scaleFactor = scale / 100.0;
-    final doc = xml.XmlDocument.parse(svg);
-    final svgElement = doc.findElements('svg').first;
+  String _addRotate(
+    StyleCreateResult result,
+    double rotate,
+    double width,
+    double height,
+    double x,
+    double y,
+  ) {
+    return '<g transform="rotate($rotate, ${width / 2 + x}, ${height / 2 + y})">${result.body}</g>';
+  }
 
-    svgElement.attributes.add(
-      xml.XmlAttribute(xml.XmlName('transform'), 'scale($scaleFactor)'),
+  String _addTranslate(
+    StyleCreateResult result,
+    double width,
+    double height,
+    double vx,
+    double vy, {
+    double? x,
+    double? y,
+  }) {
+    final double translateX = (width + vx * 2) * ((x ?? 0) / 100);
+    final double translateY = (height + vy * 2) * ((y ?? 0) / 100);
+
+    return '<g transform="translate($translateX $translateY)">${result.body}</g>';
+  }
+
+  String _addBackground(
+    StyleCreateResult result,
+    double width,
+    double height,
+    double x,
+    double y,
+    String primaryColor,
+    String secondaryColor,
+    String type, // 'solid' ou 'gradientLinear'
+    int rotation,
+  ) {
+    final solidBackground =
+        '<rect fill="$primaryColor" width="$width" height="$height" x="$x" y="$y" />';
+
+    switch (type) {
+      case 'solid':
+        return solidBackground + result.body;
+
+      case 'gradientLinear':
+        return [
+          '<rect fill="url(#backgroundLinear)" width="$width" height="$height" x="$x" y="$y" />',
+          '<defs>',
+          '<linearGradient id="backgroundLinear" gradientTransform="rotate($rotation 0.5 0.5)">',
+          '<stop stop-color="$primaryColor"/>',
+          '<stop offset="1" stop-color="$secondaryColor"/>',
+          '</linearGradient>',
+          '</defs>',
+          result.body,
+        ].join();
+    }
+
+    // Fallback si type inconnu
+    return result.body;
+  }
+
+  String _addViewboxMask(
+    StyleCreateResult result,
+    double width,
+    double height,
+    double x,
+    double y,
+    double radius,
+  ) {
+    final double rx = radius != 0 ? (width * radius) / 100 : 0;
+    final double ry = radius != 0 ? (height * radius) / 100 : 0;
+
+    return [
+      '<mask id="viewboxMask">',
+      '<rect width="$width" height="$height" rx="$rx" ry="$ry" x="$x" y="$y" fill="#fff" />',
+      '</mask>',
+      '<g mask="url(#viewboxMask)">${result.body}</g>',
+    ].join();
+  }
+
+  String _randomizeIds(StyleCreateResult result) {
+    final prng = PRNG.create(); // random seed
+    final ids = <String, String>{};
+
+    final regex = RegExp(
+      r'(id="|url\(#)([a-z0-9-_]+)([")])',
+      caseSensitive: false,
     );
 
-    return doc.toXmlString(pretty: true);
-  }
+    return result.body.replaceAllMapped(regex, (match) {
+      final m1 = match.group(1)!;
+      final m2 = match.group(2)!;
+      final m3 = match.group(3)!;
 
-  /// Applies horizontal flip to the SVG
-  String _applyFlip(String svg) {
-    final doc = xml.XmlDocument.parse(svg);
-    final svgElement = doc.findElements('svg').first;
+      ids[m2] = ids[m2] ?? prng.string(8);
 
-    final viewBox =
-        svgElement.getAttribute('viewBox')?.split(' ') ??
-        ['0', '0', '100', '100'];
-    final width = double.tryParse(viewBox[2]) ?? 100;
-
-    svgElement.attributes.add(
-      xml.XmlAttribute(
-        xml.XmlName('transform'),
-        'translate($width,0) scale(-1,1)',
-      ),
-    );
-
-    return doc.toXmlString(pretty: true);
-  }
-
-  /// Applies rotation to the SVG
-  String _applyRotate(String svg, int degrees) {
-    final doc = xml.XmlDocument.parse(svg);
-    final svgElement = doc.findElements('svg').first;
-
-    final viewBox =
-        svgElement.getAttribute('viewBox')?.split(' ') ??
-        ['0', '0', '100', '100'];
-    final width = double.tryParse(viewBox[2]) ?? 100;
-    final height = double.tryParse(viewBox[3]) ?? 100;
-
-    svgElement.attributes.add(
-      xml.XmlAttribute(
-        xml.XmlName('transform'),
-        'rotate($degrees ${width / 2} ${height / 2})',
-      ),
-    );
-
-    return doc.toXmlString(pretty: true);
-  }
-
-  /// Applies translation to the SVG
-  String _applyTranslate(String svg, int x, int y) {
-    final doc = xml.XmlDocument.parse(svg);
-    final svgElement = doc.findElements('svg').first;
-
-    svgElement.attributes.add(
-      xml.XmlAttribute(xml.XmlName('transform'), 'translate($x, $y)'),
-    );
-
-    return doc.toXmlString(pretty: true);
-  }
-
-  /// Applies clipping to the SVG
-  String _applyClip(String svg, int radius) {
-    final doc = xml.XmlDocument.parse(svg);
-    final svgElement = doc.findElements('svg').first;
-
-    final viewBox =
-        svgElement.getAttribute('viewBox')?.split(' ') ??
-        ['0', '0', '100', '100'];
-    final width = double.tryParse(viewBox[2]) ?? 100;
-    final height = double.tryParse(viewBox[3]) ?? 100;
-
-    // Create a clip path
-    final clipPathId = 'clip-${DateTime.now().millisecondsSinceEpoch}';
-    final clipPath = SvgBuilder('clipPath')
-      ..addAttribute('id', clipPathId)
-      ..addChild(
-        SvgBuilder.rect(
-          width: width,
-          height: height,
-          rx: radius.toDouble(),
-          ry: radius.toDouble(),
-        ),
-      ).build();
-
-    // Add the clip path to the SVG
-    final defs = xml.XmlDocument.parse('<defs>$clipPath</defs>');
-    svgElement.children.insert(0, defs.firstChild!);
-
-    // Apply the clip path to the SVG
-    svgElement.attributes.add(
-      xml.XmlAttribute(xml.XmlName('clip-path'), 'url(#$clipPathId)'),
-    );
-
-    return doc.toXmlString(pretty: true);
+      return '$m1${ids[m2]}$m3';
+    });
   }
 }

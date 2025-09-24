@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dice_bear/styles/smiley/smiley_options.dart';
-import 'package:flutter_dice_bear/widgets/avatar_customizer.dart';
-import 'package:flutter_dice_bear/widgets/avatar_widget.dart';
+import 'package:flutter_dice_bear/models/options.dart';
+import 'package:flutter_dice_bear/styles/adventurer/models/adventurer_options.dart';
+import 'package:flutter_dice_bear/styles/adventurer/models/adventurer_style.dart';
+import 'package:flutter_dice_bear/styles/fun_emoji/models/fun_emoji_options.dart';
+import 'package:flutter_dice_bear/styles/fun_emoji/models/fun_emoji_style.dart';
+import 'package:flutter_dice_bear/widgets/dice_bear_widget.dart';
 
 void main() {
   runApp(const DiceBearApp());
@@ -32,13 +35,9 @@ class AvatarScreen extends StatefulWidget {
 }
 
 class _AvatarScreenState extends State<AvatarScreen> {
-  late SmileyOptions _options;
-  final _avatarKey = GlobalKey<AvatarWidgetState>();
-
   @override
   void initState() {
     super.initState();
-    _options = const SmileyOptions();
   }
 
   @override
@@ -62,11 +61,18 @@ class _AvatarScreenState extends State<AvatarScreen> {
             children: [
               // Avatar display
               Center(
-                child: AvatarWidget(
-                  key: _avatarKey,
-                  seed: 'dicebear-flutter',
-                  size: 200.0,
-                  options: _options,
+                child: DiceBearWidget(
+                  style: FunEmojiStyle(
+                    options: FunEmojiOptions(
+                      seed: "benco",
+                      // skinColor: ["F54927"],
+                      // hairColor: ["F54927"],
+                    ),
+                  ),
+
+                  width: 256,
+                  height: 256,
+                  fit: BoxFit.fitWidth,
                 ),
               ),
               const SizedBox(height: 32.0),
@@ -86,12 +92,6 @@ class _AvatarScreenState extends State<AvatarScreen> {
                         ),
                       ),
                       const SizedBox(height: 16.0),
-                      AvatarCustomizer(
-                        onOptionsChanged: (options) => setState(() {
-                          _options = options;
-                        }),
-                        initialOptions: _options,
-                      ),
                     ],
                   ),
                 ),
@@ -100,15 +100,6 @@ class _AvatarScreenState extends State<AvatarScreen> {
               const SizedBox(height: 24.0),
 
               // Generate random avatar button
-              ElevatedButton.icon(
-                onPressed: _generateRandomAvatar,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Generate Random Avatar'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                ),
-              ),
-
               const SizedBox(height: 16.0),
 
               // Export button
@@ -125,33 +116,6 @@ class _AvatarScreenState extends State<AvatarScreen> {
         ),
       ),
     );
-  }
-
-  void _generateRandomAvatar() {
-    setState(() {
-      _options = SmileyOptions(
-        faceColor: _getRandomColor(),
-        featureColor: _getRandomColor(),
-        isHappy: DateTime.now().millisecond % 2 == 0,
-        hasGlasses: DateTime.now().second % 2 == 0,
-      );
-    });
-  }
-
-  String _getRandomColor() {
-    final colors = [
-      '#FF0000', // Red
-      '#00FF00', // Green
-      '#0000FF', // Blue
-      '#FFFF00', // Yellow
-      '#FF00FF', // Magenta
-      '#00FFFF', // Cyan
-      '#FFA500', // Orange
-      '#800080', // Purple
-      '#008000', // Dark Green
-      '#000080', // Navy
-    ];
-    return colors[DateTime.now().millisecondsSinceEpoch % colors.length];
   }
 
   void _exportAvatar() {

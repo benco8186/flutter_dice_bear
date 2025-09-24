@@ -5,16 +5,16 @@ class AvatarOptions {
   final String seed;
 
   /// The size of the avatar in pixels.
-  final int? size;
+  final double? size;
 
   /// The scale of the avatar as a percentage (0-100).
-  final int? scale;
+  final double? scale;
 
   /// Whether to flip the avatar horizontally.
   final bool flip;
 
   /// The rotation of the avatar in degrees.
-  final int? rotate;
+  final double? rotate;
 
   /// The background color(s) of the avatar.
   final List<String>? backgroundColor;
@@ -26,13 +26,13 @@ class AvatarOptions {
   final List<int>? backgroundRotation;
 
   /// The horizontal translation of the avatar.
-  final int? translateX;
+  final double? translateX;
 
   /// The vertical translation of the avatar.
-  final int? translateY;
+  final double? translateY;
 
   /// The border radius of the avatar.
-  final int? radius;
+  final double? radius;
 
   /// Whether to clip the avatar to a circle.
   final bool? clip;
@@ -61,16 +61,16 @@ class AvatarOptions {
   /// with the new values.
   AvatarOptions copyWith({
     String? seed,
-    int? size,
-    int? scale,
+    double? size,
+    double? scale,
     bool? flip,
-    int? rotate,
+    double? rotate,
     List<String>? backgroundColor,
     List<String>? backgroundType,
     List<int>? backgroundRotation,
-    int? translateX,
-    int? translateY,
-    int? radius,
+    double? translateX,
+    double? translateY,
+    double? radius,
     bool? clip,
     bool? randomizeIds,
   }) {
@@ -93,7 +93,7 @@ class AvatarOptions {
 
   /// Merges the given options with this one, with the given options
   /// taking precedence.
-  AvatarOptions merge(AvatarOptions? other) {
+  AvatarOptions merge(covariant AvatarOptions? other) {
     if (other == null) return this;
 
     return copyWith(

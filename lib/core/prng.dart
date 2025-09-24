@@ -1,69 +1,106 @@
-import 'dart:math';
-import 'package:crypto/crypto.dart';
-import 'dart:convert';
-
-/// A deterministic pseudorandom number generator
 class PRNG {
-  static const _maxInt = 0x7FFFFFFF;
-  final List<int> _seed;
-  int _seedIndex = 0;
-  int _currentSeed = 0;
-  final Random _random = Random();
+  final String seed;
+  int _value;
 
-  PRNG(String seed) : _seed = _hashSeed(seed);
+  PRNG._(this.seed, this._value);
 
-  static List<int> _hashSeed(String seed) {
-    final bytes = utf8.encode(seed);
-    final digest = md5.convert(bytes);
-    return digest.bytes;
+  factory PRNG.create([String seed = '']) {
+    // Ensure that seed is a string
+    seed = seed.toString();
+
+    int value = _hashSeed(seed);
+    if (value == 0) value = 1;
+
+    return PRNG._(seed, value);
   }
 
-  /// Returns a random float between 0 (inclusive) and 1 (exclusive)
-  double nextDouble() {
-    if (_seedIndex >= _seed.length) {
-      _currentSeed = _random.nextInt(_maxInt);
-      _seedIndex = 0;
+  int next() {
+    _value = _xorshift(_value);
+    return _value;
+  }
+
+  bool nextBool([int likelihood = 50]) {
+    return integer(1, 100) <= likelihood;
+  }
+
+  int integer(int min, int max) {
+    const int defaultMin = 1;
+    const int defaultMax = 2147483647; // 2^31 - 1
+
+    return ((next() - defaultMin) /
+                (defaultMax - defaultMin) *
+                (max + 1 - min) +
+            min)
+        .floor();
+  }
+
+  T? pick<T>(List<T> arr, [T? fallback]) {
+    if (arr.isEmpty) {
+      next();
+      return fallback;
     }
 
-    final byte = _seed[_seedIndex++];
-    return byte / 256.0;
+    int index = integer(0, arr.length - 1);
+    return index < arr.length ? arr[index] : fallback;
   }
 
-  /// Returns a random integer between min (inclusive) and max (exclusive)
-  int nextInt(int min, [int? max]) {
-    if (max == null) {
-      max = min;
-      min = 0;
+  List<T> shuffle<T>(List<T> arr) {
+    // Each method call should call the `next` function only once.
+    // Therefore, we use a separate instance of the PRNG here.
+    final internalPrng = PRNG.create(next().toString());
+
+    // Fisher-Yates shuffle algorithm - We do not use the List.sort method
+    // because it is not stable and produces different results when used in
+    // different environments.
+    final workingArray = List<T>.from(arr);
+
+    for (int i = workingArray.length - 1; i > 0; i--) {
+      final j = internalPrng.integer(0, i);
+
+      // Swap elements
+      final temp = workingArray[i];
+      workingArray[i] = workingArray[j];
+      workingArray[j] = temp;
     }
 
-    if (min >= max) return min;
-
-    final range = max - min;
-    return min + (nextDouble() * range).floor();
+    return workingArray;
   }
 
-  /// Picks a random item from the given list
-  T pick<T>(List<T> items, [T? defaultValue]) {
-    if (items.isEmpty) {
-      if (defaultValue != null) return defaultValue;
-      throw ArgumentError('Cannot pick from an empty list');
+  String string(
+    int length, [
+    String characters = 'abcdefghijklmnopqrstuvwxyz1234567890',
+  ]) {
+    // Each method call should call the `next` function only once.
+    // Therefore, we use a separate instance of the PRNG here.
+    final internalPrng = PRNG.create(next().toString());
+
+    String str = '';
+
+    for (int i = 0; i < length; i++) {
+      str += characters[internalPrng.integer(0, characters.length - 1)];
     }
 
-    return items[nextInt(0, items.length)];
+    return str;
   }
 
-  /// Returns a boolean with the given probability (0.0 to 1.0)
-  bool nextBool([double probability = 0.5]) {
-    return nextDouble() < probability;
+  // Helper methods (you'll need to implement these based on your original code)
+  static int _hashSeed(String seed) {
+    if (seed.isEmpty) return 1;
+
+    int hash = 0;
+    for (int i = 0; i < seed.length; i++) {
+      final char = seed.codeUnitAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+
+    return hash.abs();
   }
 
-  /// Returns a random number with normal distribution
-  double nextGaussian({double mean = 0.0, double stdDev = 1.0}) {
-    // Box-Muller transform
-    double u1 = 1.0 - nextDouble(); // [0, 1) -> (0, 1]
-    double u2 = 1.0 - nextDouble();
-    double z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * pi * u2);
-
-    return mean + stdDev * z0;
+  static int _xorshift(int value) {
+    value ^= value << 13;
+    value ^= value >> 17;
+    value ^= value << 5;
+    return value & 0x7FFFFFFF; // Keep it positive and within 32-bit range
   }
 }
