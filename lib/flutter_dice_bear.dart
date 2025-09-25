@@ -29,4 +29,5 @@ export 'src/styles/fun_emoji/fun_emoji_style.dart';
 
 // Image providers and widgets
 export 'src/image_providers/dice_bear_provider.dart';
+export 'src/core/avatar_generator.dart';
 export 'src/widgets/dice_bear_widget.dart';
