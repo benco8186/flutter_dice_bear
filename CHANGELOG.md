@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved example code in README
 - Cleaned up version numbering in pubspec.yaml
 
+### Removed
+- Removed unused dependencies: `crypto`, `flutter_svg_provider`, `vector_math`, and `xml`
+- Streamlined project dependencies to only include what's necessary
+
 ## [1.0.0] - 2025-09-25
 
 ### Added
