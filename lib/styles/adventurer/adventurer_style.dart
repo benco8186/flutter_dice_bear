@@ -39,6 +39,7 @@ class AdventurerStyle extends AvatarStyle {
     final factory = AdventurerComponentFactory();
     final components = factory.getComponents(prng: prng, options: options);
     final colors = factory.getColors(prng: prng, options: options);
+
     if (components["hair"]?.name != null &&
         invisibleEarringsHair.contains(components["hair"]?.name)) {
       components["earrings"] = null;

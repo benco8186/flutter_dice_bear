@@ -2,7 +2,6 @@ import 'package:flutter_dice_bear/core/prng.dart';
 import 'package:flutter_dice_bear/models/component.dart';
 import 'package:flutter_dice_bear/models/component_factory.dart';
 import 'package:flutter_dice_bear/models/pick_component_props.dart';
-import 'package:flutter_dice_bear/styles/adventurer/adventurer_options.dart';
 import 'package:flutter_dice_bear/styles/fun_emoji/fun_emoji_assets.dart';
 import 'package:flutter_dice_bear/styles/fun_emoji/fun_emoji_options.dart';
 
@@ -12,15 +11,14 @@ class FunEmojiComponentFactory extends ComponentFactory {
     required PRNG prng,
     required FunEmojiOptions options,
   }) {
-    return {
-      'mouth': pickComponent(
-        PickComponentProps(prng: prng, group: 'mouth', values: options.mouth),
-      ),
+    final mouthComponent = pickComponent(
+      PickComponentProps(prng: prng, group: 'mouth', values: options.mouth),
+    );
+    final eyeComponent = pickComponent(
+      PickComponentProps(prng: prng, group: 'eyes', values: options.eyes),
+    );
 
-      'eyes': pickComponent(
-        PickComponentProps(prng: prng, group: 'eyes', values: options.eyes),
-      ),
-    };
+    return {'mouth': mouthComponent, 'eyes': eyeComponent};
   }
 
   @override
@@ -29,7 +27,7 @@ class FunEmojiComponentFactory extends ComponentFactory {
   @override
   Map<String, String> getColors({
     required PRNG prng,
-    required AdventurerOptions options,
+    required FunEmojiOptions options,
   }) {
     return {};
   }

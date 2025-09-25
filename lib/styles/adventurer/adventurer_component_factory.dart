@@ -15,10 +15,9 @@ class AdventurerComponentFactory extends ComponentFactory {
     required PRNG prng,
     required AdventurerOptions options,
   }) {
-    return {
-      'skin': convertColor(prng.pick(options.skinColor, 'transparent')!),
-      'hair': convertColor(prng.pick(options.hairColor, 'transparent')!),
-    };
+    final skinColor = prng.pick(options.skinColor, 'transparent');
+    final hairColor = prng.pick(options.hairColor, 'transparent');
+    return {'skin': convertColor(skinColor!), 'hair': convertColor(hairColor!)};
   }
 
   @override
@@ -26,59 +25,57 @@ class AdventurerComponentFactory extends ComponentFactory {
     required PRNG prng,
     required AdventurerOptions options,
   }) {
+    final baseComponent = pickComponent(
+      PickComponentProps(prng: prng, group: 'base', values: options.base),
+    );
+    final eyeComponent = pickComponent(
+      PickComponentProps(prng: prng, group: 'eyes', values: options.eyes),
+    );
+    final eyebrowComponent = pickComponent(
+      PickComponentProps(
+        prng: prng,
+        group: 'eyebrows',
+        values: options.eyebrows,
+      ),
+    );
+    final mouthComponent = pickComponent(
+      PickComponentProps(prng: prng, group: 'mouth', values: options.mouth),
+    );
+    final featureComponent = pickComponent(
+      PickComponentProps(
+        prng: prng,
+        group: 'features',
+        values: options.features,
+      ),
+    );
+    final glassesComponent = pickComponent(
+      PickComponentProps(prng: prng, group: 'glasses', values: options.glasses),
+    );
+    final hearComponent = pickComponent(
+      PickComponentProps(prng: prng, group: 'hair', values: options.hair),
+    );
+    final earringComponent = pickComponent(
+      PickComponentProps(
+        prng: prng,
+        group: 'earrings',
+        values: options.earrings,
+      ),
+    );
     return {
-      'base': pickComponent(
-        PickComponentProps(prng: prng, group: 'base', values: options.base),
-      ),
-      'eyes': pickComponent(
-        PickComponentProps(prng: prng, group: 'eyes', values: options.eyes),
-      ),
-      'eyebrows': pickComponent(
-        PickComponentProps(
-          prng: prng,
-          group: 'eyebrows',
-          values: options.eyebrows,
-        ),
-      ),
-      'mouth': pickComponent(
-        PickComponentProps(prng: prng, group: 'mouth', values: options.mouth),
-      ),
-      'hair': prng.nextBool(options.hairProbability)
-          ? pickComponent(
-              PickComponentProps(
-                prng: prng,
-                group: 'hair',
-                values: options.hair,
-              ),
-            )
-          : null,
-
-      'glasses': prng.nextBool(options.glassesProbability)
-          ? pickComponent(
-              PickComponentProps(
-                prng: prng,
-                group: 'glasses',
-                values: options.glasses,
-              ),
-            )
-          : null,
-      'earrings': prng.nextBool(options.earringsProbability)
-          ? pickComponent(
-              PickComponentProps(
-                prng: prng,
-                group: 'earrings',
-                values: options.earrings,
-              ),
-            )
-          : null,
+      'base': baseComponent,
+      'eyes': eyeComponent,
+      'eyebrows': eyebrowComponent,
+      'mouth': mouthComponent,
       'features': prng.nextBool(options.featuresProbability)
-          ? pickComponent(
-              PickComponentProps(
-                prng: prng,
-                group: 'features',
-                values: options.features,
-              ),
-            )
+          ? featureComponent
+          : null,
+      'glasses': prng.nextBool(options.glassesProbability)
+          ? glassesComponent
+          : null,
+      'hair': prng.nextBool(options.hairProbability) ? hearComponent : null,
+
+      'earrings': prng.nextBool(options.earringsProbability)
+          ? earringComponent
           : null,
     };
   }

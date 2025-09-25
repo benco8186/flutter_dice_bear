@@ -1,77 +1,114 @@
-class PRNG {
+abstract class PRNG {
+  static const int min = -2147483648;
+  static const int max = 2147483647;
+  String get seed;
+  int next();
+  bool nextBool([int likelihood = 50]);
+  int integer(int min, int max);
+  T? pick<T>(List<T> arr, [T? fallback]);
+  List<T> shuffle<T>(List<T> arr);
+  String string(
+    int length, [
+    String characters = 'abcdefghijklmnopqrstuvwxyz1234567890',
+  ]);
+  PRNG();
+  factory PRNG.create([String seed = '']) {
+    int value = hashSeed(seed);
+
+    if (value == 0) value = 1;
+    return _PRNGImpl(seed, value);
+  }
+}
+
+int xorshift(int value) {
+  value = toInt32(value ^ (value << 13));
+  value = toInt32(value ^ (value >> 17));
+  value = toInt32(value ^ (value << 5));
+  // value = value ^ (value << 13);
+  // value = value ^ (value >> 17);
+  // value = value ^ (value << 5);
+  return value;
+}
+
+int hashSeed(String seed) {
+  int hash = 0;
+
+  for (int i = 0; i < seed.length; i++) {
+    hash = toInt32(((hash << 5) - hash + seed.codeUnitAt(i)));
+    hash = xorshift(hash);
+  }
+
+  return hash;
+}
+
+int toInt32(int value) {
+  // Simule le comportement JavaScript des entiers 32-bit signés
+  value = value & 0xFFFFFFFF; // Masque sur 32 bits
+  if (value > 0x7FFFFFFF) {
+    value = value - 0x100000000; // Convertit en signé
+  }
+  return value;
+}
+
+// PRNG implementation
+class _PRNGImpl extends PRNG {
+  @override
   final String seed;
   int _value;
 
-  PRNG._(this.seed, this._value);
+  _PRNGImpl(this.seed, this._value);
 
-  factory PRNG.create([String seed = '']) {
-    // Ensure that seed is a string
-    seed = seed.toString();
+  @override
+  int next() => _value = xorshift(_value);
 
-    int value = _hashSeed(seed);
-    if (value == 0) value = 1;
-
-    return PRNG._(seed, value);
+  int _integer(int min, int max) {
+    final nextNb = next();
+    double result =
+        ((nextNb - PRNG.min) / (PRNG.max - PRNG.min)) * (max + 1 - min) + min;
+    return result.floor();
   }
 
-  int next() {
-    _value = _xorshift(_value);
-    return _value;
-  }
-
+  @override
   bool nextBool([int likelihood = 50]) {
     return integer(1, 100) <= likelihood;
   }
 
+  @override
   int integer(int min, int max) {
-    const int defaultMin = 1;
-    const int defaultMax = 2147483647; // 2^31 - 1
-
-    return ((next() - defaultMin) /
-                (defaultMax - defaultMin) *
-                (max + 1 - min) +
-            min)
-        .floor();
+    return _integer(min, max);
   }
 
+  @override
   T? pick<T>(List<T> arr, [T? fallback]) {
     if (arr.isEmpty) {
       next();
       return fallback;
     }
-
+    //
     int index = integer(0, arr.length - 1);
-    return index < arr.length ? arr[index] : fallback;
+    return (index >= 0 && index < arr.length) ? arr[index] : fallback;
   }
 
+  @override
   List<T> shuffle<T>(List<T> arr) {
-    // Each method call should call the `next` function only once.
-    // Therefore, we use a separate instance of the PRNG here.
-    final internalPrng = PRNG.create(next().toString());
+    final nextNb = next();
+    final internalPrng = PRNG.create(nextNb.toString());
 
-    // Fisher-Yates shuffle algorithm - We do not use the List.sort method
-    // because it is not stable and produces different results when used in
-    // different environments.
     final workingArray = List<T>.from(arr);
-
     for (int i = workingArray.length - 1; i > 0; i--) {
       final j = internalPrng.integer(0, i);
-
-      // Swap elements
       final temp = workingArray[i];
       workingArray[i] = workingArray[j];
       workingArray[j] = temp;
     }
-
     return workingArray;
   }
 
+  @override
   String string(
     int length, [
     String characters = 'abcdefghijklmnopqrstuvwxyz1234567890',
   ]) {
-    // Each method call should call the `next` function only once.
-    // Therefore, we use a separate instance of the PRNG here.
     final internalPrng = PRNG.create(next().toString());
 
     String str = '';
@@ -81,26 +118,5 @@ class PRNG {
     }
 
     return str;
-  }
-
-  // Helper methods (you'll need to implement these based on your original code)
-  static int _hashSeed(String seed) {
-    if (seed.isEmpty) return 1;
-
-    int hash = 0;
-    for (int i = 0; i < seed.length; i++) {
-      final char = seed.codeUnitAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-
-    return hash.abs();
-  }
-
-  static int _xorshift(int value) {
-    value ^= value << 13;
-    value ^= value >> 17;
-    value ^= value << 5;
-    return value & 0x7FFFFFFF; // Keep it positive and within 32-bit range
   }
 }

@@ -27,6 +27,7 @@ class FunEmojiStyle extends AvatarStyle {
   StyleCreateResult create({required PRNG prng}) {
     final factory = FunEmojiComponentFactory();
     final components = factory.getComponents(prng: prng, options: options);
+    factory.getColors(prng: prng, options: options);
     final attr = StyleCreateResultAttributes(viewBox: '0 0 200 200');
     attr["fill"] = "none";
     attr["shape-rendering"] = "auto";

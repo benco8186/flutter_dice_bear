@@ -8,7 +8,6 @@ import 'package:flutter_dice_bear/models/avatar_result.dart';
 import 'package:flutter_dice_bear/utils/functions.dart';
 import 'package:flutter_dice_bear/utils/licence_utils.dart';
 
-/// A function that creates an avatar component based on the given PRNG and options
 typedef AvatarComponentBuilder =
     String Function({
       required PRNG prng,
@@ -17,29 +16,18 @@ typedef AvatarComponentBuilder =
       Map<String, String> colors,
     });
 
-/// The main class for generating avatars
 class AvatarGenerator {
   final AvatarStyle style;
 
-  /// Creates a new AvatarGenerator with the given style and default options
   AvatarGenerator({required this.style});
 
-  /// Generates an avatar with the given options
   AvatarResult generate() {
     final prng = PRNG.create(style.options.seed);
-
-    // Create the avatar components
     final result = style.create(prng: prng);
     final backgroundType = prng.pick(
       style.options.backgroundType ?? [],
       'solid',
     );
-    final viewBoxParts = result.attributes.viewBox.split(' ');
-    final x = double.parse(viewBoxParts[0]);
-    final y = double.parse(viewBoxParts[1]);
-    final vbW = double.parse(viewBoxParts[2]);
-    final vbH = double.parse(viewBoxParts[3]);
-
     final (
       String bgPrimaryColor,
       String bgSecondaryColor,
@@ -48,6 +36,12 @@ class AvatarGenerator {
       style.options.backgroundColor ?? [],
       backgroundType,
     );
+    final viewBoxParts = result.attributes.viewBox.split(' ');
+    final x = double.parse(viewBoxParts[0]);
+    final y = double.parse(viewBoxParts[1]);
+    final vbW = double.parse(viewBoxParts[2]);
+    final vbH = double.parse(viewBoxParts[3]);
+
     final bgRotationHasValues =
         style.options.backgroundRotation != null &&
         style.options.backgroundRotation!.isNotEmpty;
@@ -126,19 +120,14 @@ class AvatarGenerator {
   (String primary, String secondary) _getBackgroundColors(
     PRNG prng,
     List<String> backgroundColor,
-    String backgroundType, // "solid" ou "gradientLinear"
+    String backgroundType,
   ) {
     List<String> shuffledBackgroundColors = prng.shuffle(backgroundColor);
 
-    if (shuffledBackgroundColors.length <= 1) {
-      // Si pas de couleur ou une seule couleur
+    if (shuffledBackgroundColors.length <= 1 ||
+        (backgroundColor.length == 2 && backgroundType == 'gradientLinear')) {
       shuffledBackgroundColors = backgroundColor;
-      prng.next(); // consomme un pas du PRNG
-    } else if (backgroundColor.length == 2 &&
-        backgroundType == 'gradientLinear') {
-      // Si exactement 2 couleurs + dégradé → respecter l'ordre fourni
-      shuffledBackgroundColors = backgroundColor;
-      prng.next(); // consomme un pas du PRNG
+      prng.next();
     } else {
       shuffledBackgroundColors = prng.shuffle(backgroundColor);
     }
