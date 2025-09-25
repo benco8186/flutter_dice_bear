@@ -159,9 +159,6 @@ final avatarResult = AvatarGenerator(
 // Create a provider instance
 final provider = DiceBearProvider(
   avatarResult: avatarResult,
-  size: 200, // Optional: size of the image
-  scale: 1.0, // Optional: scale factor
-  color: Colors.blue, // Optional: color to apply to the SVG
 );
 
 // Use with an Image widget
@@ -171,9 +168,6 @@ Image(image: provider);
 #### Parameters
 
 - `avatarResult` (required): The `AvatarResult` containing the SVG data
-- `size`: The size of the image (width and height)
-- `scale`: Scale factor for the image
-- `color`: Color to apply to the SVG
 
 ## Contributing
 

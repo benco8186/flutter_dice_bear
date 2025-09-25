@@ -18,8 +18,6 @@ import 'package:flutter_dice_bear/src/models/avatar_result.dart';
 /// // Create a provider
 /// final provider = DiceBearProvider(
 ///   avatarResult: avatarResult,
-///   size: 200,
-///   color: Colors.blue,
 /// );
 ///
 /// // Use with an Image widget
@@ -34,16 +32,5 @@ class DiceBearProvider extends SvgProvider {
   /// The [avatarResult] parameter is required and contains the SVG data
   /// and metadata for the avatar.
   ///
-  /// Additional parameters are passed to the parent [SvgProvider]:
-  /// - [size] defines the width and height of the rendered image.
-  /// - [scale] scales the image relative to the [size].
-  /// - [color] is the color to apply to the SVG.
-  /// - [svgGetter] is an optional callback to asynchronously load the SVG data.
-  DiceBearProvider({
-    required this.avatarResult,
-    super.size,
-    super.scale,
-    super.color,
-    super.svgGetter,
-  }) : super(avatarResult.svg);
+  DiceBearProvider({required this.avatarResult}) : super(avatarResult.svg);
 }

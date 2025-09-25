@@ -4,7 +4,7 @@ homepage: https://github.com/benco8186/flutter_dice_bear
 repository: https://github.com/benco8186/flutter_dice_bear
 issue_tracker: https://github.com/benco8186/flutter_dice_bear/issues
 
-version: 1.0.0+1
+version: 1.0.1
 
 environment:
   sdk: ^3.9.2
